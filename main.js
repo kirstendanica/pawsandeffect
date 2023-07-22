@@ -11,7 +11,7 @@ document.getElementById('upload-btn').addEventListener('click', () => {
     resultSection.classList.add('hidden');
 
     if (fileInput.files.length === 0) {
-        alert('Please select a file to upload.');
+        displayError('No file selected. Please select an image or video to upload.');
         loading.classList.add('hidden');
         return;
     }
@@ -22,39 +22,63 @@ document.getElementById('upload-btn').addEventListener('click', () => {
     } else if (file.type.startsWith('video/')) {
         processVideoFile(file);
     } else {
-        alert('Unsupported file type. Please upload an image or video.');
+        displayError('Unsupported file type. Please upload an image or video.');
         loading.classList.add('hidden');
     }
 });
 
 async function processImageFile(file) {
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    img.onload = async () => {
-        const mood = await detectMood(img);
-        displayResult(mood);
-    };
+    try {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = async () => {
+            try {
+                const mood = await detectMood(img);
+                displayResult(mood);
+            } catch (err) {
+                displayError('Error processing the image. Please try again.');
+            }
+        };
+    } catch (error) {
+        displayError('Error loading the image file.');
+    }
 }
 
 async function processVideoFile(file) {
-    const video = document.createElement('video');
-    video.src = URL.createObjectURL(file);
-    video.onloadeddata = async () => {
-        video.currentTime = video.duration / 2; // Capture a frame from the middle of the video
-    };
-    video.onseeked = async () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const img = document.createElement('img');
-        img.src = canvas.toDataURL();
-        img.onload = async () => {
-            const mood = await detectMood(img);
-            displayResult(mood);
+    try {
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(file);
+        video.onloadeddata = async () => {
+            try {
+                video.currentTime = video.duration / 2; 
+            } catch (err) {
+                displayError('Error processing the video file.');
+            }
         };
-    };
+        video.onseeked = async () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL();
+                img.onload = async () => {
+                    try {
+                        const mood = await detectMood(img);
+                        displayResult(mood);
+                    } catch (err) {
+                        displayError('Error processing the video frame.');
+                    }
+                };
+            } catch (error) {
+                displayError('Error capturing frame from video.');
+            }
+        };
+    } catch (error) {
+        displayError('Error loading the video file.');
+    }
 }
 
 async function detectMood(img) {
@@ -62,7 +86,7 @@ async function detectMood(img) {
         const randomMood = ['happy', 'sad', 'anxious', 'relaxed'][Math.floor(Math.random() * 4)];
         return randomMood;
     } catch (error) {
-        displayError('Error detecting mood. Please try again.');
+        throw new Error('Error detecting mood.');
     }
 }
 
@@ -71,7 +95,7 @@ function displayResult(mood) {
     document.getElementById('mood-result').innerText = mood;
     document.getElementById('happiness-tips').innerText = getHappinessTips(mood);
     addToMoodDiary(mood);
-    updateMoodChart(mood); 
+    updateMoodChart(mood);
     document.getElementById('result-section').classList.remove('hidden');
 }
 
