@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paws and Effect</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Paws amd Effect</h1>
+        <div class="upload-section">
+            <h2>Upload a photo or video of your pet</h2>
+            <input type="file" id="fileInput" accept="image/*,video/*">
+            <button id="upload-btn">Upload</button>
+        </div>
+        <div id="result-section" class="hidden">
+            <h2>Detected Mood: <span id="mood-result"></span></h2>
+            <div id="tips-section">
+                <h3>Tips for Pet Happiness</h3>
+                <p id="happiness-tips"></p>
+            </div>
+            <div id="diary-section">
+                <h3>Mood Diary</h3>
+                <ul id="mood-diary"></ul>
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
