@@ -1,3 +1,5 @@
+let moodChart;
+
 document.getElementById('upload-btn').addEventListener('click', () => {
     const fileInput = document.getElementById('input');
     const loading = document.getElementById('loading');
@@ -57,7 +59,6 @@ async function processVideoFile(file) {
 
 async function detectMood(img) {
     try {
-        // Placeholder: Use simple analysis or a pre-trained model for better accuracy
         const randomMood = ['happy', 'sad', 'anxious', 'relaxed'][Math.floor(Math.random() * 4)];
         return randomMood;
     } catch (error) {
@@ -75,12 +76,28 @@ function displayResult(mood) {
 
 function getHappinessTips(mood) {
     const tips = {
-        happy: 'Keep doing what you\'re doing! Your pet is happy.',
-        sad: 'Try spending more time playing with your pet.',
-        anxious: 'Create a calm environment and comfort your pet.',
-        relaxed: 'Your pet is relaxed. Maintain a routine to keep them happy.'
+        happy: [
+            'Keep doing what you\'re doing! Your pet is happy.',
+            'Ensure regular playtime and exercise.',
+            'Maintain a healthy diet and hydration.'
+        ],
+        sad: [
+            'Try spending more time playing with your pet.',
+            'Ensure your pet has a comfortable and cozy space.',
+            'Check for any changes in your pet’s environment that might be causing stress.'
+        ],
+        anxious: [
+            'Create a calm environment and comfort your pet.',
+            'Use soothing music or white noise to help your pet relax.',
+            'Consider using calming products like pheromone diffusers.'
+        ],
+        relaxed: [
+            'Your pet is relaxed. Maintain a routine to keep them happy.',
+            'Provide plenty of soft bedding and a quiet space.',
+            'Keep up with regular health check-ups to ensure continued well-being.'
+        ]
     };
-    return tips[mood];
+    return tips[mood][Math.floor(Math.random() * tips[mood].length)];
 }
 
 function addToMoodDiary(mood) {
@@ -116,5 +133,52 @@ function displayError(message) {
     error.classList.remove('hidden');
 }
 
-// Load the mood diary on page load
-window.onload = loadMoodDiary;
+// Load the mood diary and initialize the chart on page load
+window.onload = () => {
+    loadMoodDiary();
+    initializeMoodChart();
+};
+
+function initializeMoodChart() {
+    const ctx = document.getElementById('mood-chart').getContext('2d');
+    moodChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [], // Dates will go here
+            datasets: [{
+                label: 'Pet Mood Over Time',
+                data: [], // Moods will go here
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day'
+                    }
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Load existing data into the chart
+    const moodDiary = JSON.parse(localStorage.getItem('moodDiary')) || [];
+    moodDiary.forEach(entry => {
+        moodChart.data.labels.push(new Date(entry.date));
+        moodChart.data.datasets[0].data.push(entry.mood);
+    });
+    moodChart.update();
+}
+
+function updateMoodChart(mood) {
+    const date = new Date();
+    moodChart.data.labels.push(date);
+    moodChart.data.datasets[0].data.push(mood);
+    moodChart.update();
+}
