@@ -71,6 +71,7 @@ function displayResult(mood) {
     document.getElementById('mood-result').innerText = mood;
     document.getElementById('happiness-tips').innerText = getHappinessTips(mood);
     addToMoodDiary(mood);
+    updateMoodChart(mood); 
     document.getElementById('result-section').classList.remove('hidden');
 }
 
@@ -133,7 +134,6 @@ function displayError(message) {
     error.classList.remove('hidden');
 }
 
-// Load the mood diary and initialize the chart on page load
 window.onload = () => {
     loadMoodDiary();
     initializeMoodChart();
@@ -167,7 +167,6 @@ function initializeMoodChart() {
         }
     });
 
-    // Load existing data into the chart
     const moodDiary = JSON.parse(localStorage.getItem('moodDiary')) || [];
     moodDiary.forEach(entry => {
         moodChart.data.labels.push(new Date(entry.date));
