@@ -1,6 +1,7 @@
 let moodChart;
+let darkMode = localStorage.getItem('darkMode') === 'enabled';
 
-document.getElementById('upload-btn').addEventListener('click', () => {
+document.getElementById('upload-btn').addEventListener('click', async () => {
     const fileInput = document.getElementById('input');
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
@@ -11,80 +12,70 @@ document.getElementById('upload-btn').addEventListener('click', () => {
     resultSection.classList.add('hidden');
 
     if (fileInput.files.length === 0) {
-        displayError('No file selected. Please select an image or video to upload.');
-        loading.classList.add('hidden');
+        displayError('Please select an image or video to upload.');
         return;
     }
 
     const file = fileInput.files[0];
-    if (file.type.startsWith('image/')) {
-        processImageFile(file);
-    } else if (file.type.startsWith('video/')) {
-        processVideoFile(file);
-    } else {
-        displayError('Unsupported file type. Please upload an image or video.');
+    try {
+        let img;
+        if (file.type.startsWith('image/')) {
+            img = await processImageFile(file);
+        } else if (file.type.startsWith('video/')) {
+            img = await processVideoFile(file);
+        } else {
+            throw new Error('Unsupported file type. Please upload an image or video.');
+        }
+        const mood = await detectMood(img);
+        displayResult(mood);
+    } catch (err) {
+        displayError(err.message);
+    } finally {
         loading.classList.add('hidden');
     }
 });
 
 async function processImageFile(file) {
-    try {
-        const img = document.createElement('img');
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to load image'));
         img.src = URL.createObjectURL(file);
-        img.onload = async () => {
-            try {
-                const mood = await detectMood(img);
-                displayResult(mood);
-            } catch (err) {
-                displayError('Error processing the image. Please try again.');
-            }
-        };
-    } catch (error) {
-        displayError('Error loading the image file.');
-    }
+    });
 }
 
 async function processVideoFile(file) {
-    try {
+    return new Promise((resolve, reject) => {
         const video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.onloadeddata = async () => {
-            try {
-                video.currentTime = video.duration / 2; 
-            } catch (err) {
-                displayError('Error processing the video file.');
-            }
+        video.onloadeddata = () => {
+            video.currentTime = video.duration / 2;
         };
-        video.onseeked = async () => {
+        video.onseeked = () => {
             try {
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const img = document.createElement('img');
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Failed to create image from video frame'));
                 img.src = canvas.toDataURL();
-                img.onload = async () => {
-                    try {
-                        const mood = await detectMood(img);
-                        displayResult(mood);
-                    } catch (err) {
-                        displayError('Error processing the video frame.');
-                    }
-                };
             } catch (error) {
-                displayError('Error capturing frame from video.');
+                reject(new Error('Failed to capture frame from video'));
             }
         };
-    } catch (error) {
-        displayError('Error loading the video file.');
-    }
+        video.onerror = () => reject(new Error('Failed to load video'));
+        video.src = URL.createObjectURL(file);
+    });
 }
 
 async function detectMood(img) {
     try {
-        const randomMood = ['happy', 'sad', 'anxious', 'relaxed'][Math.floor(Math.random() * 4)];
-        return randomMood;
+        const intensity = document.getElementById('mood-intensity').value;
+        const moods = ['happy', 'sad', 'anxious', 'relaxed'];
+        const randomMood = moods[Math.floor(Math.random() * moods.length)];
+        return `${randomMood} (Intensity: ${intensity})`;
     } catch (error) {
         throw new Error('Error detecting mood.');
     }
@@ -109,7 +100,7 @@ function getHappinessTips(mood) {
         sad: [
             'Try spending more time playing with your pet.',
             'Ensure your pet has a comfortable and cozy space.',
-            'Check for any changes in your pet’s environment that might be causing stress.'
+            'Check for any changes in your pet\'s environment that might be causing stress.'
         ],
         anxious: [
             'Create a calm environment and comfort your pet.',
@@ -122,7 +113,8 @@ function getHappinessTips(mood) {
             'Keep up with regular health check-ups to ensure continued well-being.'
         ]
     };
-    return tips[mood][Math.floor(Math.random() * tips[mood].length)];
+    const moodKey = mood.split(' ')[0].toLowerCase();
+    return tips[moodKey][Math.floor(Math.random() * tips[moodKey].length)];
 }
 
 function addToMoodDiary(mood) {
@@ -158,9 +150,29 @@ function displayError(message) {
     error.classList.remove('hidden');
 }
 
+function toggleDarkMode() {
+    darkMode = !darkMode;
+    document.body.classList.toggle('dark-mode', darkMode);
+    localStorage.setItem('darkMode', darkMode ? 'enabled' : 'disabled');
+}
+
+function saveMoodIntensity(intensity) {
+    localStorage.setItem('moodIntensity', intensity);
+}
+
+function loadMoodIntensity() {
+    return localStorage.getItem('moodIntensity') || 5;
+}
+
 window.onload = () => {
     loadMoodDiary();
     initializeMoodChart();
+    document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
+    document.getElementById('mood-intensity').value = loadMoodIntensity();
+    document.getElementById('mood-intensity').addEventListener('change', (e) => saveMoodIntensity(e.target.value));
+    if (darkMode) {
+        document.body.classList.add('dark-mode');
+    }
 };
 
 function initializeMoodChart() {
@@ -168,10 +180,10 @@ function initializeMoodChart() {
     moodChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [], // Dates will go here
+            labels: [],
             datasets: [{
                 label: 'Pet Mood Over Time',
-                data: [], // Moods will go here
+                data: [],
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
             }]

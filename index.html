@@ -5,35 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paws and Effect</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
 </head>
 <body>
     <div class="container">
         <h1>Paws and Effect</h1>
+
+        <div id="settings">
+            <label for="mood-intensity">Mood Intensity:</label>
+            <input type="range" id="mood-intensity" min="1" max="10" value="5" aria-label="Set mood intensity">
+            <button id="dark-mode-toggle" aria-label="Toggle dark mode">🌙</button>
+        </div>
+
         <div class="upload-section">
             <h2>Upload a photo or video of your pet</h2>
-            <input type="file" id="input" accept="image/*,video/*">
-            <button id="upload-btn">Upload</button>
+            <input type="file" id="input" accept="image/*,video/*" aria-label="Choose file to upload">
+            <button id="upload-btn" aria-label="Upload pet photo or video">Upload</button>
         </div>
-        <div id="loading" class="hidden">Loading...</div>
-        <div id="error" class="hidden"></div>
+
+        <div id="loading" class="hidden" aria-live="polite">
+            Loading...
+        </div>
+
+        <div id="error" class="hidden" aria-live="assertive"></div>
+
         <div id="result-section" class="hidden">
             <h2>Detected Mood: <span id="mood-result"></span></h2>
+            
             <div id="tips-section">
                 <h3>Tips for Pet Happiness</h3>
                 <p id="happiness-tips"></p>
             </div>
+
             <div id="diary-section">
                 <h3>Mood Diary</h3>
                 <ul id="mood-diary"></ul>
             </div>
+
             <div id="chart-section">
                 <h3>Mood Tracking</h3>
                 <canvas id="mood-chart"></canvas>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

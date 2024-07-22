@@ -64,5 +64,42 @@ button:hover {
     border-radius: 50%;
     width: 24px;
     height: 24px;
-    margin-right: 10px
+    margin-right: 10px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+body.dark-mode {
+    background-color: #333;
+    color: #F4F3F2;
+}
+
+body.dark-mode .container {
+    background: #444;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3 {
+    color: #F4F3F2;
+}
+
+#settings {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+#mood-intensity {
+    margin: 0 10px;
+}
+
+#dark-mode-toggle {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
 }
