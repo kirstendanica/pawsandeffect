@@ -5,66 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paws and Effect</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
 </head>
 <body>
     <div class="container">
         <h1>Paws and Effect</h1>
 
         <div id="auth-section">
-            <input type="email" id="email" placeholder="Email">
-            <input type="password" id="password" placeholder="Password">
+            <h2>Sign Up or Login</h2>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <div id="password-strength"></div>
             <button onclick="signUp()">Sign Up</button>
             <button onclick="login()">Login</button>
+            <button onclick="resetPassword()">Forgot Password</button>
         </div>
 
-        <div id="user-info">
-            <span id="user-email"></span>
+        <div id="user-info" class="hidden">
+            <p>Logged in as: <span id="user-email"></span></p>
             <button id="logout-btn" onclick="logout()" class="hidden">Logout</button>
         </div>
 
         <div id="settings">
-            Mood Intensity:
+            <label for="mood-intensity">Mood Intensity:</label>
             <input type="range" id="mood-intensity" min="1" max="10" value="5">
             <button id="dark-mode-toggle">🌙</button>
         </div>
 
-        <div class="upload-section">
+        <div id="upload-section">
             <h2>Upload a photo or video of your pet</h2>
             <input type="file" id="file-input" accept="image/*,video/*">
             <button id="upload-btn" disabled>Upload</button>
         </div>
 
-        <div id="loading" class="hidden" aria-live="polite">Loading...</div>
+        <div id="loading" class="hidden" aria-live="polite">
+            Loading...
+        </div>
 
         <div id="error" class="hidden" aria-live="assertive"></div>
 
+        <div id="message" class="hidden" aria-live="polite"></div>
+
         <div id="result-section" class="hidden">
             <h2>Detected Mood: <span id="mood-result"></span></h2>
-
             <div id="tips-section">
                 <h3>Tips for Pet Happiness</h3>
                 <p id="happiness-tips"></p>
             </div>
-
-            <div id="diary-section">
-                <h3>Mood Diary</h3>
-                <ul id="mood-diary"></ul>
-            </div>
-
-            <div id="chart-section">
-                <h3>Mood Tracking</h3>
-                <canvas id="mood-chart"></canvas>
-            </div>
         </div>
 
+        <div id="diary-section">
+            <h3>Mood Diary</h3>
+            <ul id="mood-diary"></ul>
+        </div>
+
+        <div id="chart-section">
+            <h3>Mood Tracking</h3>
+            <canvas id="mood-chart"></canvas>
+        </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

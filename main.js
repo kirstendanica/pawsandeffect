@@ -42,21 +42,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('user-email').textContent = user.email;
             document.getElementById('auth-section').classList.add('hidden');
             document.getElementById('logout-btn').classList.remove('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
             loadMoodDiary();
         } else {
             currentUser = null;
             document.getElementById('user-email').textContent = '';
             document.getElementById('auth-section').classList.remove('hidden');
             document.getElementById('logout-btn').classList.add('hidden');
+            document.getElementById('user-info').classList.add('hidden');
             clearMoodDiary();
         }
     });
+
+    document.getElementById('password').addEventListener('input', checkPasswordStrength);
 });
+
+function checkPasswordStrength() {
+    const password = document.getElementById('password').value;
+    const strengthMeter = document.getElementById('password-strength');
+    const strength = calculatePasswordStrength(password);
+    strengthMeter.textContent = `Password strength: ${strength}`;
+}
+
+function calculatePasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/)) strength++;
+    if (password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    
+    switch (strength) {
+        case 0: case 1: return 'Weak';
+        case 2: case 3: return 'Medium';
+        case 4: case 5: return 'Strong';
+        default: return 'Unknown';
+    }
+}
 
 function signUp() {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            userCredential.user.sendEmailVerification();
+            displayMessage('Verification email sent. Please check your inbox.');
+        })
         .catch((error) => displayError(error.message));
 }
 
@@ -69,6 +100,17 @@ function login() {
 
 function logout() {
     firebase.auth().signOut()
+        .catch((error) => displayError(error.message));
+}
+
+function resetPassword() {
+    const email = document.getElementById('email').value;
+    if (!email) {
+        displayError('Please enter your email address.');
+        return;
+    }
+    firebase.auth().sendPasswordResetEmail(email)
+        .then(() => displayMessage('Password reset email sent. Please check your inbox.'))
         .catch((error) => displayError(error.message));
 }
 
@@ -169,10 +211,9 @@ function interpretResult(result) {
         return moods[moodIndex] || 'unknown';
     } else {
         console.error('Invalid result format:', result);
-        return 'unknown'; // Return 'unknown' in the case of an invalid result
+        return 'unknown';
     }
 }
-
 
 function displayResult(mood) {
     document.getElementById('loading').classList.add('hidden');
@@ -249,13 +290,34 @@ function loadMoodDiary() {
             querySnapshot.forEach((doc) => {
                 const entry = doc.data();
                 const newEntry = document.createElement('li');
-                newEntry.innerText = `${new Date(entry.date).toLocaleString()}: ${entry.mood}`;
+                newEntry.innerHTML = `
+                    ${new Date(entry.date).toLocaleString()}: ${entry.mood}
+                    <button onclick="deleteMoodEntry('${doc.id}')">Delete</button>
+                `;
                 moodDiaryList.appendChild(newEntry);
             });
             updateMoodChart();
         })
         .catch((error) => {
             console.error("Error loading mood diary: ", error);
+        });
+}
+
+function deleteMoodEntry(entryId) {
+    if (!currentUser) return;
+
+    firebase.firestore().collection('moodDiary')
+        .doc(currentUser.uid)
+        .collection('entries')
+        .doc(entryId)
+        .delete()
+        .then(() => {
+            displayMessage('Mood entry deleted successfully');
+            loadMoodDiary();
+        })
+        .catch((error) => {
+            console.error("Error deleting mood entry: ", error);
+            displayError('Failed to delete mood entry');
         });
 }
 
@@ -273,6 +335,15 @@ function displayError(message) {
     const error = document.getElementById('error');
     error.innerText = message;
     error.classList.remove('hidden');
+}
+
+function displayMessage(message) {
+    const messageElement = document.getElementById('message');
+    messageElement.innerText = message;
+    messageElement.classList.remove('hidden');
+    setTimeout(() => {
+        messageElement.classList.add('hidden');
+    }, 5000);
 }
 
 function toggleDarkMode() {
