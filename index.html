@@ -5,32 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paws and Effect</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
 </head>
 <body>
     <div class="container">
         <h1>Paws and Effect</h1>
 
+        <div id="auth-section">
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="signUp()">Sign Up</button>
+            <button onclick="login()">Login</button>
+        </div>
+
+        <div id="user-info">
+            <span id="user-email"></span>
+            <button id="logout-btn" onclick="logout()" class="hidden">Logout</button>
+        </div>
+
         <div id="settings">
-            <label for="mood-intensity">Mood Intensity:</label>
-            <input type="range" id="mood-intensity" min="1" max="10" value="5" aria-label="Set mood intensity">
-            <button id="dark-mode-toggle" aria-label="Toggle dark mode">🌙</button>
+            Mood Intensity:
+            <input type="range" id="mood-intensity" min="1" max="10" value="5">
+            <button id="dark-mode-toggle">🌙</button>
         </div>
 
         <div class="upload-section">
             <h2>Upload a photo or video of your pet</h2>
-            <input type="file" id="input" accept="image/*,video/*" aria-label="Choose file to upload">
-            <button id="upload-btn" aria-label="Upload pet photo or video">Upload</button>
+            <input type="file" id="file-input" accept="image/*,video/*">
+            <button id="upload-btn" disabled>Upload</button>
         </div>
 
-        <div id="loading" class="hidden" aria-live="polite">
-            Loading...
-        </div>
+        <div id="loading" class="hidden" aria-live="polite">Loading...</div>
 
         <div id="error" class="hidden" aria-live="assertive"></div>
 
         <div id="result-section" class="hidden">
             <h2>Detected Mood: <span id="mood-result"></span></h2>
-            
+
             <div id="tips-section">
                 <h3>Tips for Pet Happiness</h3>
                 <p id="happiness-tips"></p>
@@ -46,9 +59,12 @@
                 <canvas id="mood-chart"></canvas>
             </div>
         </div>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

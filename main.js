@@ -1,8 +1,78 @@
+let model;
 let moodChart;
 let darkMode = localStorage.getItem('darkMode') === 'enabled';
+let currentUser = null;
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDg6BlyNw30MTsuDJ04edjd1LGTZDMGzXQ",
+    authDomain: "pawsneffect-8ca0e.firebaseapp.com",
+    projectId: "pawsneffect-8ca0e",
+    storageBucket: "pawsneffect-8ca0e.appspot.com",
+    messagingSenderId: "700931930859",
+    appId: "1:700931930859:web:8a1fe46a65b66956579cae",
+    measurementId: "G-CKCPYFCLEW"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+async function loadModel() {
+    try {
+        model = await tf.loadLayersModel('https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json');
+        const layer = model.getLayer('conv_pw_13_relu');
+        console.log('Model loaded successfully');
+        return tf.model({ inputs: model.inputs, outputs: layer.output });
+    } catch (error) {
+        console.error('Error loading model:', error);
+        throw new Error('Failed to load the mood detection model.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        model = await loadModel();
+        document.getElementById('upload-btn').disabled = false;
+    } catch (error) {
+        displayError('Failed to load the mood detection model. Please refresh the page and try again.');
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('logout-btn').classList.remove('hidden');
+            loadMoodDiary();
+        } else {
+            currentUser = null;
+            document.getElementById('user-email').textContent = '';
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('logout-btn').classList.add('hidden');
+            clearMoodDiary();
+        }
+    });
+});
+
+function signUp() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+        .catch((error) => displayError(error.message));
+}
+
+function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    firebase.auth().signInWithEmailAndPassword(email, password)
+        .catch((error) => displayError(error.message));
+}
+
+function logout() {
+    firebase.auth().signOut()
+        .catch((error) => displayError(error.message));
+}
 
 document.getElementById('upload-btn').addEventListener('click', async () => {
-    const fileInput = document.getElementById('input');
+    const fileInput = document.getElementById('file-input');
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
     const resultSection = document.getElementById('result-section');
@@ -72,14 +142,36 @@ async function processVideoFile(file) {
 
 async function detectMood(img) {
     try {
+        const tensor = tf.browser.fromPixels(img)
+            .resizeNearestNeighbor([224, 224])
+            .toFloat()
+            .expandDims();
+        
+        const result = await model.predict(tensor).data();
+        console.log('Model prediction result:', result);
+        const mood = interpretResult(result);
+        console.log('Detected mood:', mood);
         const intensity = document.getElementById('mood-intensity').value;
-        const moods = ['happy', 'sad', 'anxious', 'relaxed'];
-        const randomMood = moods[Math.floor(Math.random() * moods.length)];
-        return `${randomMood} (Intensity: ${intensity})`;
+        return `${mood} (Intensity: ${intensity})`;
     } catch (error) {
+        console.error('Error detecting mood:', error);
         throw new Error('Error detecting mood.');
     }
 }
+
+function interpretResult(result) {
+    console.log('Interpreting result:', result);
+    if (Array.isArray(result) && result.length > 0 && !isNaN(result[0])) {
+        const moodIndex = result.indexOf(Math.max(...result));
+        const moods = ['happy', 'sad', 'anxious', 'relaxed'];
+        console.log('Mood index:', moodIndex, 'Moods:', moods);
+        return moods[moodIndex] || 'unknown';
+    } else {
+        console.error('Invalid result format:', result);
+        return 'unknown'; // Return 'unknown' in the case of an invalid result
+    }
+}
+
 
 function displayResult(mood) {
     document.getElementById('loading').classList.add('hidden');
@@ -114,33 +206,65 @@ function getHappinessTips(mood) {
         ]
     };
     const moodKey = mood.split(' ')[0].toLowerCase();
+    console.log('Mood key:', moodKey);
+    if (!tips[moodKey]) {
+        console.log('Unknown mood:', moodKey);
+        return 'Unable to provide tips for this mood.';
+    }
     return tips[moodKey][Math.floor(Math.random() * tips[moodKey].length)];
 }
 
 function addToMoodDiary(mood) {
-    const moodDiary = document.getElementById('mood-diary');
-    const newEntry = document.createElement('li');
-    const date = new Date().toLocaleString();
-    newEntry.innerText = `${date}: ${mood}`;
-    moodDiary.appendChild(newEntry);
+    if (!currentUser) return;
 
-    saveMoodDiary(mood, date);
-}
-
-function saveMoodDiary(mood, date) {
-    let moodDiary = JSON.parse(localStorage.getItem('moodDiary')) || [];
-    moodDiary.push({ date, mood });
-    localStorage.setItem('moodDiary', JSON.stringify(moodDiary));
+    const date = new Date().toISOString();
+    firebase.firestore().collection('moodDiary')
+        .doc(currentUser.uid)
+        .collection('entries')
+        .add({
+            date: date,
+            mood: mood
+        })
+        .then(() => {
+            loadMoodDiary();
+        })
+        .catch((error) => {
+            console.error("Error adding document: ", error);
+        });
 }
 
 function loadMoodDiary() {
-    const moodDiary = JSON.parse(localStorage.getItem('moodDiary')) || [];
+    if (!currentUser) return;
+
     const moodDiaryList = document.getElementById('mood-diary');
-    moodDiary.forEach(entry => {
-        const newEntry = document.createElement('li');
-        newEntry.innerText = `${entry.date}: ${entry.mood}`;
-        moodDiaryList.appendChild(newEntry);
-    });
+    moodDiaryList.innerHTML = '';
+
+    firebase.firestore().collection('moodDiary')
+        .doc(currentUser.uid)
+        .collection('entries')
+        .orderBy('date', 'desc')
+        .get()
+        .then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                const entry = doc.data();
+                const newEntry = document.createElement('li');
+                newEntry.innerText = `${new Date(entry.date).toLocaleString()}: ${entry.mood}`;
+                moodDiaryList.appendChild(newEntry);
+            });
+            updateMoodChart();
+        })
+        .catch((error) => {
+            console.error("Error loading mood diary: ", error);
+        });
+}
+
+function clearMoodDiary() {
+    document.getElementById('mood-diary').innerHTML = '';
+    if (moodChart) {
+        moodChart.data.labels = [];
+        moodChart.data.datasets[0].data = [];
+        moodChart.update();
+    }
 }
 
 function displayError(message) {
@@ -165,7 +289,6 @@ function loadMoodIntensity() {
 }
 
 window.onload = () => {
-    loadMoodDiary();
     initializeMoodChart();
     document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
     document.getElementById('mood-intensity').value = loadMoodIntensity();
@@ -202,18 +325,30 @@ function initializeMoodChart() {
             }
         }
     });
-
-    const moodDiary = JSON.parse(localStorage.getItem('moodDiary')) || [];
-    moodDiary.forEach(entry => {
-        moodChart.data.labels.push(new Date(entry.date));
-        moodChart.data.datasets[0].data.push(entry.mood);
-    });
-    moodChart.update();
 }
 
-function updateMoodChart(mood) {
-    const date = new Date();
-    moodChart.data.labels.push(date);
-    moodChart.data.datasets[0].data.push(mood);
-    moodChart.update();
+function updateMoodChart() {
+    if (!currentUser) return;
+
+    firebase.firestore().collection('moodDiary')
+        .doc(currentUser.uid)
+        .collection('entries')
+        .orderBy('date', 'asc')
+        .get()
+        .then((querySnapshot) => {
+            const labels = [];
+            const data = [];
+            querySnapshot.forEach((doc) => {
+                const entry = doc.data();
+                labels.push(new Date(entry.date));
+                data.push(entry.mood);
+            });
+
+            moodChart.data.labels = labels;
+            moodChart.data.datasets[0].data = data;
+            moodChart.update();
+        })
+        .catch((error) => {
+            console.error("Error updating mood chart: ", error);
+        });
 }
