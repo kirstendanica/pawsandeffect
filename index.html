@@ -19,56 +19,39 @@
             <h2>Sign Up or Login</h2>
             <input type="email" id="email" placeholder="Email" required>
             <input type="password" id="password" placeholder="Password" required>
-            <div id="password-strength"></div>
-            <button onclick="signUp()">Sign Up</button>
-            <button onclick="login()">Login</button>
-            <button onclick="resetPassword()">Forgot Password</button>
+            <button id="signUpButton">Sign Up</button>
+            <button id="loginButton">Login</button>
+            <button id="resetPasswordButton">Reset Password</button>
         </div>
-
+    
         <div id="user-info" class="hidden">
             <p>Logged in as: <span id="user-email"></span></p>
-            <button id="logout-btn" onclick="logout()" class="hidden">Logout</button>
+            <button id="logout-btn" class="hidden">Logout</button>
         </div>
-
-        <div id="settings">
-            <label for="mood-intensity">Mood Intensity:</label>
-            <input type="range" id="mood-intensity" min="1" max="10" value="5">
-            <button id="dark-mode-toggle">🌙</button>
-        </div>
-
-        <div id="upload-section">
-            <h2>Upload a photo or video of your pet</h2>
-            <input type="file" id="file-input" accept="image/*,video/*">
-            <button id="upload-btn" disabled>Upload</button>
-        </div>
-
-        <div id="loading" class="hidden" aria-live="polite">
-            Loading...
-        </div>
-
-        <div id="error" class="hidden" aria-live="assertive"></div>
-
-        <div id="message" class="hidden" aria-live="polite"></div>
-
-        <div id="result-section" class="hidden">
-            <h2>Detected Mood: <span id="mood-result"></span></h2>
-            <div id="tips-section">
-                <h3>Tips for Pet Happiness</h3>
-                <p id="happiness-tips"></p>
-            </div>
-        </div>
-
-        <div id="diary-section">
-            <h3>Mood Diary</h3>
+    
+        <div>
+            <h2>Mood Diary</h2>
             <ul id="mood-diary"></ul>
         </div>
-
-        <div id="chart-section">
-            <h3>Mood Tracking</h3>
-            <canvas id="mood-chart"></canvas>
+    
+        <div>
+            <h2>Upload Pet Image</h2>
+            <input type="file" id="file-input" accept="image/*">
+            <button id="upload-btn" disabled>Upload</button>
         </div>
+    
+        <div id="result-section" class="hidden">
+            <h2>Mood Result</h2>
+            <p id="mood-result"></p>
+            <p id="happiness-tips"></p>
+        </div>
+    
+        <div id="loading" class="hidden">Loading...</div>
+    
+        <div id="message" class="hidden"></div>
+        <div id="error" class="hidden"></div>
+    
+        <button id="dark-mode-toggle">🌙</button>
     </div>
-
+    
     <script src="main.js"></script>
-</body>
-</html>
